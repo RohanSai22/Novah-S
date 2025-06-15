@@ -61,6 +61,7 @@ Visit: **http://localhost:8082**
 
 - **Normal**: 400 words, 20-30 sources, quick insights
 - **Deep**: 800 words, 120+ sources, comprehensive analysis
+- **Simple Chat**: direct conversation with Gemini, no research
 
 ## 👀 What You'll See
 

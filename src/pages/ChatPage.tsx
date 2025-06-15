@@ -40,6 +40,7 @@ import {
   type ChatMessage,
   type UploadedFileMetadata,
 } from "@/services/chatSessionStorage";
+import { simpleChatService, type SimpleChatMessage } from "@/services/simpleChatService";
 
 interface UploadedFile {
   // For component state, includes File object
@@ -88,6 +89,8 @@ const ChatPage = () => {
   const [streamingContent, setStreamingContent] = useState("");
   const [originalQuery, setOriginalQuery] = useState("");
   const [isAutonomousMode, setIsAutonomousMode] = useState(true);
+  // normal | deep | simple chat
+  const [mode, setMode] = useState<"normal" | "deep" | "simple">("normal");
   const [viewingThinkingForMessageId, setViewingThinkingForMessageId] =
     useState<string | null>(null);
   const [retrievedThinkingStream, setRetrievedThinkingStream] = useState<
@@ -120,6 +123,7 @@ const ChatPage = () => {
           processingTimestamp: now,
         })),
         isAutonomousMode,
+        mode,
         messages: messagesWithTimestamps,
         perfectMindMapData,
         createdAt: now, // This should be set only once when creating
@@ -177,6 +181,7 @@ const ChatPage = () => {
       const {
         query,
         files,
+        mode: navMode,
         deepResearch,
         autonomousMode: navAutonomousMode,
         sessionId: existingSessionId,
@@ -195,6 +200,7 @@ const ChatPage = () => {
               ? true
               : savedSession.isAutonomousMode
           );
+          setMode(savedSession.mode || "normal");
 
           // Sort messages chronologically when loading from localStorage
           const sortedMessages = savedSession.messages.sort((a, b) => {
@@ -232,6 +238,7 @@ const ChatPage = () => {
       setIsAutonomousMode(
         navAutonomousMode === undefined ? true : navAutonomousMode
       );
+      setMode(navMode || (deepResearch ? "deep" : "normal"));
 
       // Files from navigation are now ProcessedFileInput[]
       const initialProcessedFilesFromNav: ProcessedFileInput[] = files || [];
@@ -284,11 +291,13 @@ const ChatPage = () => {
           // Create new session if no valid existing session
           const newSessionId = chatSessionStorage.createNewSession();
           setCurrentSessionId(newSessionId);
+          setMode("normal");
         }
       } else {
         // Create new session
         const newSessionId = chatSessionStorage.createNewSession();
         setCurrentSessionId(newSessionId);
+        setMode("normal");
       }
     }
   }, []); // Empty dependency array for mount only
@@ -324,7 +333,11 @@ const ChatPage = () => {
       saveChatSession();
     }, 100);
 
-    await processResearchQuery(query, currentFiles, deepResearch); // Pass ProcessedFileInput[]
+    if (mode === "simple") {
+      await processSimpleChat(query);
+    } else {
+      await processResearchQuery(query, currentFiles, deepResearch); // Pass ProcessedFileInput[]
+    }
   };
 
   const processResearchQuery = async (
@@ -493,6 +506,36 @@ const ChatPage = () => {
     }
   };
 
+  const processSimpleChat = async (query: string) => {
+    setIsProcessing(true);
+    try {
+      const history: SimpleChatMessage[] = [
+        ...messages.map((m) => ({
+          role: m.type === "user" ? "user" : "assistant",
+          content: m.content,
+        })),
+        { role: "user", content: query },
+      ];
+      const reply = await simpleChatService.sendMessage(history);
+      const aiMessage: ChatMessage = {
+        id: uuidv4(),
+        type: "ai",
+        content: reply,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+      setIsProcessing(false);
+    } catch (error) {
+      console.error("Simple chat error:", error);
+      toast({
+        title: "Chat Error",
+        description: "Failed to get response from Gemini.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() && uploadedFiles.length === 0) return;
     const currentQuery = newMessage; // Capture before reset
@@ -520,6 +563,10 @@ const ChatPage = () => {
     // setOriginalQuery(currentQuery);
 
     try {
+      if (mode === "simple") {
+        await processSimpleChat(currentQuery);
+        return;
+      }
       const lastAiMessage = messages.filter((m) => m.type === "ai").pop();
       if (lastAiMessage && !isAutonomousMode) {
         // Only use AIService follow-up if not in autonomous mode
@@ -631,6 +678,7 @@ const ChatPage = () => {
         setMessages(sortedMessages);
         setOriginalQuery(session.originalQuery);
         setIsAutonomousMode(session.isAutonomousMode);
+        setMode(session.mode || "normal");
         setPerfectMindMapData(session.perfectMindMapData || null);
 
         // Reset other states
@@ -677,6 +725,7 @@ const ChatPage = () => {
     // Create new session
     const newSessionId = chatSessionStorage.createNewSession();
     setCurrentSessionId(newSessionId);
+    setMode("normal");
 
     // Reset all state
     setMessages([]);
@@ -1041,14 +1090,15 @@ const ChatPage = () => {
           <ChatInput
             message={newMessage}
             onMessageChange={setNewMessage}
-            onSendMessage={handleSendMessage}
-            onFileUpload={handleChatFileUpload} // Use specific handler for ChatInput uploads
-            uploadedFiles={uploadedFiles}
-            onRemoveFile={(id) =>
-              setUploadedFiles((prev) => prev.filter((f) => f.id !== id))
-            }
-            isProcessing={isProcessing}
-          />
+          onSendMessage={handleSendMessage}
+          onFileUpload={handleChatFileUpload} // Use specific handler for ChatInput uploads
+          uploadedFiles={uploadedFiles}
+          onRemoveFile={(id) =>
+            setUploadedFiles((prev) => prev.filter((f) => f.id !== id))
+          }
+          isProcessing={isProcessing}
+          disableFileUpload={mode === "simple"}
+        />
         </div>
 
         {showMindMap && perfectMindMapData && (
