@@ -19,6 +19,7 @@ interface ChatInputProps {
   uploadedFiles: UploadedFile[];
   onRemoveFile: (id: string) => void;
   isProcessing: boolean;
+  disableFileUpload?: boolean;
 }
 
 const ChatInput = ({
@@ -29,6 +30,7 @@ const ChatInput = ({
   uploadedFiles,
   onRemoveFile,
   isProcessing,
+  disableFileUpload,
 }: ChatInputProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,7 +47,7 @@ const ChatInput = ({
   return (
     <div className="p-6 border-t border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
       <div className="max-w-4xl mx-auto">
-        {uploadedFiles.length > 0 && (
+        {uploadedFiles.length > 0 && !disableFileUpload && (
           <div className="mb-4 space-y-2">
             {uploadedFiles.map((file) => (
               <div
@@ -81,29 +83,34 @@ const ChatInput = ({
             disabled={isProcessing}
           />
 
-          <input
-            type="file"
-            multiple
-            accept=".txt,.pdf,.doc,.docx"
-            onChange={onFileUpload}
-            className="hidden"
-            ref={fileInputRef}
-          />
+          {!disableFileUpload && (
+            <>
+              <input
+                type="file"
+                multiple
+                accept=".txt,.pdf,.doc,.docx"
+                onChange={onFileUpload}
+                className="hidden"
+                ref={fileInputRef}
+              />
 
-          <Button
-            variant="outline"
-            onClick={handleUploadClick}
-            className="bg-slate-700/30 border-2 border-slate-600/50 text-white hover:bg-slate-700/50 hover:border-slate-500/70 rounded-2xl px-4 py-3"
-            disabled={isProcessing}
-            type="button"
-          >
-            <Upload className="h-4 w-4" />
-          </Button>
+              <Button
+                variant="outline"
+                onClick={handleUploadClick}
+                className="bg-slate-700/30 border-2 border-slate-600/50 text-white hover:bg-slate-700/50 hover:border-slate-500/70 rounded-2xl px-4 py-3"
+                disabled={isProcessing}
+                type="button"
+              >
+                <Upload className="h-4 w-4" />
+              </Button>
+            </>
+          )}
 
           <Button
             onClick={onSendMessage}
             disabled={
-              (!message.trim() && uploadedFiles.length === 0) || isProcessing
+              (!message.trim() && (uploadedFiles.length === 0 || disableFileUpload)) ||
+              isProcessing
             }
             className="bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white rounded-2xl px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
           >

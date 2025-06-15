@@ -3,7 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Upload, ArrowRight, Sparkles, Menu } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import SuggestionCards from "@/components/home/SuggestionCards";
@@ -26,7 +32,7 @@ interface UploadedFile {
 const HomePage = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [deepResearch, setDeepResearch] = useState(false);
+  const [mode, setMode] = useState<"normal" | "deep" | "simple">("normal");
   const [autonomousMode] = useState(true); // Always use autonomous mode
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -190,7 +196,7 @@ const HomePage = () => {
       state: {
         query,
         files: processedFilesForChat, // Pass the new array
-        deepResearch,
+        mode,
         autonomousMode,
       },
     });
@@ -270,19 +276,33 @@ const HomePage = () => {
                 <div className="flex items-center justify-between flex-wrap gap-6">
                   <div className="flex items-center space-x-8">
                     <div className="flex items-center space-x-3">
-                      <Switch
-                        checked={deepResearch}
-                        onCheckedChange={setDeepResearch}
-                        className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-emerald-500 data-[state=checked]:to-cyan-500"
-                      />
+                      <Select
+                        value={mode}
+                        onValueChange={(val) => setMode(val as "normal" | "deep" | "simple")}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal Research</SelectItem>
+                          <SelectItem value="deep">Deep Research</SelectItem>
+                          <SelectItem value="simple">Simple Chat</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <div className="flex flex-col">
                         <span className="text-white font-medium">
-                          {deepResearch ? "Deep Research" : "Normal Research"}
+                          {mode === "deep"
+                            ? "Deep Research"
+                            : mode === "normal"
+                            ? "Normal Research"
+                            : "Simple Chat"}
                         </span>
                         <span className="text-xs text-slate-400">
-                          {deepResearch
+                          {mode === "deep"
                             ? "800 words, 120-140+ sources"
-                            : "400 words, 20-30 sources"}
+                            : mode === "normal"
+                            ? "400 words, 20-30 sources"
+                            : "Chat with Gemini"}
                         </span>
                       </div>
                     </div>
