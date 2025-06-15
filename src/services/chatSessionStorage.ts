@@ -142,6 +142,8 @@ export interface ChatSessionSummary {
   hasMindMap: boolean;
   hasThinking: boolean;
   isAutonomous: boolean;
+  /** Mode of the session: Normal, Deep, or Simple chat. */
+  mode?: "normal" | "deep" | "simple";
   // Enhanced metadata
   topicCount?: number;
   relevanceScore?: number;
@@ -185,6 +187,8 @@ export interface ChatSession {
   originalQuery: string;
   uploadedFileMetadata?: UploadedFileMetadata[];
   isAutonomousMode: boolean;
+  /** Session interaction mode. */
+  mode: "normal" | "deep" | "simple";
   messages: ChatMessage[];
   // Perfect mind map data
   perfectMindMapData?: PerfectMindMapData | null;
@@ -266,6 +270,7 @@ class ChatSessionStorageService {
           (msg) => msg.type === "ai" && (msg.thinkingStreamData || msg.thinking)
         ),
         isAutonomous: session.isAutonomousMode, // Enhanced metadata
+        mode: session.mode,
         topicCount: session.perfectMindMapData?.nodes?.length || 0,
         relevanceScore: this.calculateSessionRelevanceScore(session),
         mindMapVersion: "2.0",
@@ -584,6 +589,7 @@ class ChatSessionStorageService {
       id: sessionId,
       originalQuery: "",
       isAutonomousMode: false,
+      mode: "normal",
       messages: [],
       createdAt: new Date(),
       lastUpdated: new Date(),
