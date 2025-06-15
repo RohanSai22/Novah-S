@@ -20,10 +20,10 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="*" element={<NotFound />} />
+          <Analytics />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-    <Analytics />
   </QueryClientProvider>
 );
 
