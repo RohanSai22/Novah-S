@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import ChatPage from "./pages/ChatPage";
 import NotFound from "./pages/NotFound";
-import { Analytics } from "@vercel/analytics/next";
 
 const queryClient = new QueryClient();
 
